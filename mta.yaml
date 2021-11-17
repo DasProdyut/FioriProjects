@@ -1,0 +1,94 @@
+_schema-version: "3.2"
+ID: com-gyansys-travellist
+description: A Fiori application.
+version: 0.0.1
+modules:
+- name: com-gyansys-travellist-dest-content
+  type: com.sap.application.content
+  requires:
+  - name: com-gyansys-travellist-dest-srv
+    parameters:
+      content-target: true
+  - name: com-gyansys-travellist-repo-host
+    parameters:
+      service-key:
+        name: com-gyansys-travellist-repo-host-key
+  - name: com-gyansys-travellist-uaa
+    parameters:
+      service-key:
+        name: com-gyansys-travellist-uaa-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: com-gyansys-travellist_repo_host
+          ServiceInstanceName: com-gyansys-travellist-html5-srv
+          ServiceKeyName: com-gyansys-travellist-repo-host-key
+          sap.cloud.service: com-gyansys-travellist
+        - Authentication: OAuth2UserTokenExchange
+          Name: com-gyansys-travellist_uaa
+          ServiceInstanceName: com-gyansys-travellist-xsuaa-srv
+          ServiceKeyName: com-gyansys-travellist-uaa-key
+          sap.cloud.service: com-gyansys-travellist
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: com-gyansys-travellist-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: com-gyansys-travellist-repo-host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - comgyansystravellist.zip
+      name: comgyansystravellist
+      target-path: resources/
+- name: comgyansystravellist
+  type: html5
+  path: .
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: com-gyansys-travellist-dest-srv
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: com-gyansys-travellist-dest-srv
+    service-plan: lite
+- name: com-gyansys-travellist-uaa
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: com-gyansys-travellist-xsuaa-srv
+    service-plan: application
+- name: com-gyansys-travellist-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: com-gyansys-travellist-html5-srv
+    service-plan: app-host
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
